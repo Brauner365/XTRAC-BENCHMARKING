@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Xtrac Pay Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Figtree:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-screen Syntech Hub sign-in, then a single report column — headline tiles, range charts per role, shift-pattern calculator, source table, method. */
+:root{
+  --bg:#f5f4f3; --surface:#ffffff; --fg:#17181b; --muted:#666970; --line:#e3e1df;
+  --red:#E8302A; --red-ink:#ffffff; --red-soft:#fdeceb;
+  --bar:#c9cbd0; --bar-shift:#f1a19c; --ok:#1f7a4d;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111215; --surface:#1a1b1f; --fg:#f1f1f2; --muted:#9a9ca3; --line:#2c2e33;
+  --red:#ff4a43; --red-ink:#140606; --red-soft:#3a1716; --bar:#474a52; --bar-shift:#8a3a36; --ok:#5fcf95; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111215; --surface:#1a1b1f; --fg:#f1f1f2; --muted:#9a9ca3; --line:#2c2e33;
+  --red:#ff4a43; --red-ink:#140606; --red-soft:#3a1716; --bar:#474a52; --bar-shift:#8a3a36; --ok:#5fcf95; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body)}
+
+/* ---------- Sign-in (mirrors Syntech Hub) ---------- */
+.login-screen{--lred:#EF3741;position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#fff;background:#16181c;font-family:var(--body);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.login-screen::before{content:'';position:absolute;inset:-60px;background:
+  radial-gradient(260px 420px at 8% 40%,rgba(205,210,218,.55),transparent 70%),
+  radial-gradient(180px 520px at 22% 60%,rgba(20,22,26,.95),transparent 70%),
+  radial-gradient(340px 300px at 38% 30%,rgba(214,200,182,.42),transparent 70%),
+  radial-gradient(220px 260px at 44% 62%,rgba(160,48,52,.45),transparent 72%),
+  radial-gradient(300px 360px at 57% 48%,rgba(240,236,228,.30),transparent 70%),
+  radial-gradient(160px 600px at 71% 50%,rgba(14,15,18,.95),transparent 70%),
+  radial-gradient(360px 420px at 86% 30%,rgba(180,188,200,.45),transparent 70%),
+  radial-gradient(260px 300px at 90% 78%,rgba(60,66,76,.8),transparent 70%),
+  linear-gradient(90deg,#3a3e45 0 7%,#15161a 7% 11%,#4a4e56 11% 30%,#1a1b1f 30% 33%,#55575c 33% 63%,#141518 63% 67%,#444850 67% 100%);
+  filter:blur(36px);transform:scale(1.08)}
+.login-screen::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(8,8,10,.55),rgba(8,8,10,.74) 70%),linear-gradient(180deg,rgba(8,8,10,.25),rgba(8,8,10,.6))}
+.ls-top,.ls-main,.login-legal{position:relative;z-index:2}
+.ls-top{display:flex;align-items:center;justify-content:space-between;padding:22px 6vw 0}
+.ls-logo{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ls-logo svg{width:92px;height:46px}
+.ls-logo b{font:600 22px/1 var(--body);letter-spacing:.14em}
+.ls-logo small{font-size:9.5px;letter-spacing:.32em;font-weight:500}
+.ls-site{height:44px;padding:0 26px;border:2px solid var(--lred);border-radius:60px;color:#fff;font-size:15px;text-decoration:none;display:inline-flex;align-items:center}
+.ls-site:hover{background:var(--lred)}
+.ls-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 20px 40px}
+.login-title{font:600 clamp(40px,5.6vw,80px)/1.05 var(--body);letter-spacing:-.01em;margin:0 0 18px;text-wrap:balance}
+.login-title span{color:var(--lred);font-weight:500}
+.ls-client{font-size:clamp(17px,1.8vw,22px);margin:0 0 14px;color:rgba(255,255,255,.9)}
+.ls-sectors{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 30px;font-size:17px;font-weight:600;margin-bottom:50px}
+.login-box{width:100%;max-width:980px}
+.login-sub{font-size:clamp(24px,2.6vw,36px);margin-bottom:22px}
+.ls-row{display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:start}
+.fld{position:relative}
+.fld label{position:absolute;left:-9999px}
+.inp{position:relative}
+.login-box input{width:100%;height:50px;padding:0 26px;border-radius:60px;border:2px solid var(--lred);background:rgba(10,10,12,.45);color:#fff;font:16px var(--body);text-align:center}
+.login-box input::placeholder{color:rgba(255,255,255,.85)}
+.login-box input:focus{outline:none;background:rgba(10,10,12,.6);box-shadow:0 0 0 4px rgba(239,55,65,.25)}
+#pw-input{padding-right:78px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);height:34px;padding:0 14px;border:none;border-radius:40px;background:transparent;color:rgba(255,255,255,.75);font:600 13px var(--body);cursor:pointer}
+.pw-toggle:hover{color:#fff;background:rgba(255,255,255,.08)}
+.fld-hint{display:block;margin-top:8px;font-size:12.5px;color:rgba(255,255,255,.66)}
+.btn-login{height:50px;padding:0 44px;border-radius:60px;border:2px solid var(--lred);background:var(--lred);color:#fff;font:600 16px var(--body);cursor:pointer;white-space:nowrap}
+.btn-login:hover{background:#d82a34}
+.pw-toggle:focus-visible,.btn-login:focus-visible,.ls-site:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.login-err{max-width:560px;margin:20px auto 0;padding:12px 22px;border-radius:60px;background:rgba(239,55,65,.16);border:1px solid rgba(239,55,65,.55);font-size:14.5px}
+.login-foot{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:34px;font-size:14px;color:rgba(255,255,255,.66)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex:none}
+.login-legal{text-align:center;padding:0 20px 22px;font-size:12.5px;color:rgba(255,255,255,.45)}
+@media (max-width:820px){.ls-row{grid-template-columns:1fr}.btn-login{width:100%}.ls-sectors{font-size:14.5px;gap:8px 18px;margin-bottom:36px}.ls-site{display:none}.ls-top{justify-content:center}}
+
+/* ---------- Report ---------- */
+.report{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 72px}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:#16181c;color:#fff;margin-left:calc(-1*max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1*max(16px,env(safe-area-inset-right,0px)));padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+.topbar-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tb-brand{display:flex;align-items:center;gap:10px;font:600 13px var(--body);letter-spacing:.14em}
+.tb-brand svg{width:30px;height:15px}
+.tb-right{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.7)}
+.tb-right button{height:30px;padding:0 14px;border-radius:40px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:500 12.5px var(--body);cursor:pointer}
+.wrap{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:40px;padding-top:36px}
+.wrap>*{min-width:0}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+h1{font:800 clamp(30px,4.4vw,48px)/1.05 var(--display);font-stretch:88%;margin:10px 0 12px;letter-spacing:-.01em;text-wrap:balance}
+h2{font:700 22px/1.2 var(--display);margin:0 0 6px;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:16px;font:500 13px var(--mono);color:var(--muted)}
+.meta b{color:var(--fg);font-weight:500}
+.sec-head{display:grid;gap:4px;margin-bottom:16px}
+.sec-head p{margin:0;color:var(--muted);max-width:72ch;font-size:14px}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:4px;min-width:0}
+.tile .k{font:500 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font:700 30px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.tile .s{font-size:13px;color:var(--muted)}
+.tile.hl{border-color:var(--red)}
+.tile.hl .v{color:var(--red)}
+
+.stats{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.stats th,.stats td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.stats th:first-child,.stats td:first-child{text-align:left}
+.stats thead th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stats td.med{font-weight:700;color:var(--red)}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 10px}
+.chart h3{font:700 16px var(--display);margin:0 0 2px}
+.chart .cap{font-size:13px;color:var(--muted);margin:0 0 14px}
+.rows{display:grid;gap:7px}
+.r{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:12px;align-items:center}
+.r .lab{font-size:13px;line-height:1.25;min-width:0}
+.r .lab small{display:block;color:var(--muted);font-size:11.5px}
+.track{position:relative;height:22px;overflow:visible}
+.chart{overflow:hidden}
+.grid-l{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.rng{position:absolute;top:7px;height:8px;border-radius:4px;background:var(--bar)}
+.rng.shift{background:var(--bar-shift)}
+.rng.xt{background:var(--red)}
+.mid{position:absolute;top:4px;width:2px;height:14px;background:var(--fg);transform:translateX(-1px)}
+.rv{position:absolute;top:2px;font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
+.medline{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--red);transform:translateX(-1px);opacity:.9}
+.axis{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:12px;margin-top:6px}
+.axis .ticks{position:relative;height:18px;font:500 11px var(--mono);color:var(--muted)}
+.axis .ticks span{position:absolute;transform:translateX(-50%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:18px;height:8px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.subhead{font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+@media (max-width:640px){.r,.axis{grid-template-columns:minmax(0,1fr)}.axis>div:first-child{display:none}.r{gap:2px}}
+
+.calc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:16px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end}
+.ctl{display:grid;gap:5px}
+.ctl label{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ctl input,.ctl select{height:38px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:0 10px;font:500 15px var(--mono);width:120px}
+.ctl select{width:auto;font-family:var(--body)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{height:36px;padding:0 12px;border:0;background:transparent;color:var(--fg);font:500 13px var(--body);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+input:focus-visible,select:focus-visible,.seg button:focus-visible,.tb-right button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.pat td.rate{font-weight:700}
+.pat td.note,.pat th.note{text-align:left;white-space:normal;min-width:220px;color:var(--muted);font-size:13px}
+.chip{display:inline-block;font:500 11px var(--mono);padding:2px 8px;border-radius:999px;background:var(--red-soft);color:var(--red)}
+
+.src td,.src th{text-align:left}
+.src td{white-space:normal;vertical-align:top}
+.src td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.src a{color:var(--fg)}
+.tag{font:500 10.5px var(--mono);padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.x{border-color:var(--red);color:var(--red)}
+.method{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 32px;font-size:14px}
+.method p{margin:0}
+.method b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+@media (max-width:760px){.method{grid-template-columns:minmax(0,1fr)}}
+footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+<style>
+.pitch{background:#16181c;color:#fff;border-radius:14px;padding:28px;display:grid;gap:22px}
+.pitch h2{color:#fff;font-size:clamp(24px,3vw,32px)}
+.pitch .lede{color:rgba(255,255,255,.75)}
+.pitch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.pitch-grid{grid-template-columns:minmax(0,1fr)}}
+.pc{border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:16px;display:grid;gap:6px;align-content:start}
+.pc b{font:700 17px var(--display)}
+.pc span{font-size:14px;color:rgba(255,255,255,.72)}
+.offer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:center;border:2px solid #EF3741;border-radius:12px;padding:22px}
+@media (max-width:760px){.offer{grid-template-columns:minmax(0,1fr)}}
+.offer .big{font:800 clamp(44px,6vw,64px)/1 var(--display);color:#EF3741}
+.offer .big small{display:block;font:600 14px var(--body);color:#fff;letter-spacing:.04em;margin-top:8px}
+.fee{display:grid;gap:10px}
+.fee .rowf{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.fee label{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6);display:grid;gap:4px}
+.fee input{height:36px;width:120px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font:500 15px var(--mono);padding:0 10px}
+.fee table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.fee td{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.fee td:last-child{text-align:right;font-weight:700}
+.fee tr.save td{color:#5fd39a;border-bottom:0}
+.contact{display:flex;flex-wrap:wrap;gap:8px 24px;font:500 14px var(--mono);color:rgba(255,255,255,.85)}
+.tile.dark{background:#16181c;border-color:#16181c;color:#fff}
+.tile.dark .k,.tile.dark .s{color:rgba(255,255,255,.65)}
+.tile.dark .v{color:#EF3741}
+</style>
+
+</head>
+<body>
+<!-- ===== Sign-in ===== -->
+<div class="login-screen" id="login-screen">
+  <div class="ls-top">
+    <span class="ls-logo"><svg viewBox="0 0 92 46" aria-hidden="true"><path d="M6 0H26L46 23L26 46H6L26 23Z" fill="#EF3741"/><path d="M36 0H56L76 23L56 46H36L56 23Z" fill="#EF3741"/></svg><b>SYNTECH</b><small>RECRUITMENT SOLUTIONS</small></span>
+    <a class="ls-site" href="https://www.syntechrecruitment.co.uk/" target="_blank" rel="noopener">syntechrecruitment.co.uk</a>
+  </div>
+  <main class="ls-main">
+    <h1 class="login-title">Syntech <span>Benchmarking</span></h1>
+    <p class="ls-client" id="ls-client"></p>
+    <div class="ls-sectors" aria-label="Sectors"><span>Energy &amp; Power</span><span>Manufacturing</span><span>Engineering</span><span>Automotive &amp; Motorsport</span><span>Aerospace</span><span>Technology</span></div>
+    <form class="login-box" id="login-form" autocomplete="on">
+      <div class="login-sub">Sign in</div>
+      <div class="ls-row">
+        <div class="fld">
+          <label for="who-input">Your name</label>
+          <div class="inp"><input type="text" id="who-input" name="username" autocomplete="username" placeholder="Your name"></div>
+          <span class="fld-hint">Shown on the report header</span>
+        </div>
+        <div class="fld">
+          <label for="pw-input">Access code</label>
+          <div class="inp">
+            <input type="password" id="pw-input" name="password" autocomplete="current-password" placeholder="Access code">
+            <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Show access code">Show</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-login" id="btn-login">Sign in</button>
+      </div>
+      <div class="login-err" id="login-err" role="alert" hidden></div>
+      <div class="login-foot"><span class="live-dot"></span><span id="ls-foot"></span></div>
+    </form>
+  </main>
+  <div class="login-legal">Prepared by Syntech Recruitment. Confidential to the named client.</div>
+</div>
+
+<!-- ===== Report ===== -->
+<div class="report" id="report" hidden>
+  <div class="topbar"><div class="topbar-in">
+    <span class="tb-brand"><svg viewBox="0 0 92 46" aria-hidden="true"><path d="M6 0H26L46 23L26 46H6L26 23Z" fill="#EF3741"/><path d="M36 0H56L76 23L56 46H36L56 23Z" fill="#EF3741"/></svg>SYNTECH · BENCHMARKING</span>
+    <span class="tb-right"><span id="tb-who"></span><button type="button" id="signout">Sign out</button></span>
+  </div></div>
+  <div class="wrap">
+    <section>
+      <div class="eyebrow" id="r-eyebrow"></div>
+      <h1 id="r-title"></h1>
+      <p class="lede" id="r-lede"></p>
+      <div class="meta" id="r-meta"></div>
+    </section>
+    <section>
+      <div class="sec-head"><h2>Headline rates</h2><p id="tiles-note"></p></div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+    <section>
+      <div class="sec-head"><h2>Market distribution</h2><p>Skilled setter / programmer adverts on days. "Advertised up to" is the top of each advertised range, which is where experienced machinists are hired. "Range midpoint" is the middle of each range.</p></div>
+      <div class="tbl"><table class="stats" id="stats-table"></table></div>
+    </section>
+    <section id="charts"></section>
+    <section>
+      <div class="sec-head"><h2>Shift pattern options</h2><p>Basic rate options: lower £19, median £21, upper £23 an hour. Each pattern applies its uplift to the chosen basic rate. Change any uplift or the hours to model a different offer.</p></div>
+      <div class="calc">
+        <div class="controls">
+          <div class="ctl"><label>Basic set at</label><div class="seg" id="c-seg"></div></div>
+          <div class="ctl"><label for="c-base">Basic £/hr</label><input id="c-base" type="number" step="0.05" min="10" max="60"></div>
+          <div class="ctl"><label for="c-hrs">Hours / week</label><input id="c-hrs" type="number" step="0.5" min="20" max="60" value="39"></div>
+          <div class="ctl"><label for="c-fri">Friday OT hrs</label><input id="c-fri" type="number" step="0.5" min="0" max="12" value="8"></div>
+        </div>
+        <div class="tbl" style="border:0"><table class="stats pat" id="pat-table"></table></div>
+      </div>
+    </section>
+    <section class="pitch" id="pitch"></section>
+    <section>
+      <div class="sec-head"><h2>Live adverts</h2><p id="src-note"></p></div>
+      <div class="tbl"><table class="stats src" id="src-table"></table></div>
+    </section>
+    <section>
+      <div class="sec-head"><h2>Method</h2></div>
+      <div class="method" id="method"></div>
+    </section>
+    <footer id="foot"></footer>
+  </div>
+</div>
+<script>
+/* =====================================================================
+   BENCHMARK DATA - the only block that changes per client.
+   ===================================================================== */
+const BENCH = {
+  client: "Xtrac",
+  site: "Kennet Park, Thatcham RG19",
+  roles: [{id:"miller",name:"CNC Miller"},{id:"turner",name:"CNC Turner"},{id:"mill-turn",name:"Mill-Turn / CNC Machinist"}],
+  headlineRoles: "CNC Millers & Turners",
+  radiusMiles: 35,
+  hoursPerWeek: 39,
+  dated: "4 November 2026",
+  window: "September to November 2026",
+  preparedBy: "Stephen Brauner, Director, Syntech Recruitment",
+  contact: {phone:"01276 405 870", email:"stephen@syntechrecruitment.co.uk", web:"syntechrecruitment.co.uk"},
+  accessCode: "Xtrac2026",
+  baseRates: {lq:19, med:21, uq:23},
+  flatFee: 4000,
+  advertisers: 40,
+  points: [{"role":"miller","title":"CNC Miller / Programmer","town":"Blackwater","mi":20.9,"pattern":"days","level":"skilled","date":"30 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-reading","lo":45000,"hi":60000,"unit":"yr","loH":22.19,"hiH":29.59},{"role":"turner","title":"CNC Turner \u2013 Setter Operator","town":"Yateley","mi":18.4,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":14,"hi":20,"unit":"hr","loH":14,"hiH":20},{"role":"turner","title":"CNC Turner \u2013 Motorsport","town":"Thatcham","mi":0.9,"pattern":"nights/weekends","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-newbury"},{"role":"turner","title":"CNC Turner, Programmer, Setter","town":"Thatcham","mi":0.9,"pattern":"days","level":"skilled","date":"15 Sep 2026","url":"https://www.engineeringjobs.co.uk/job/225491435/cnc-turner","lo":19,"hi":21,"unit":"hr","loH":19,"hiH":21},{"role":"miller","title":"CNC Miller \u2013 Motorsport (5-axis)","town":"Thatcham","mi":0.9,"pattern":"nights/weekends","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-newbury"},{"role":"miller","title":"CNC Miller Setter / Operator \u2013 5 Axis","town":"Yateley","mi":18.4,"pattern":"days","level":"skilled","date":"Oct 2026","url":"https://www.cv-library.co.uk/cnc-miller-jobs-in-reading","lo":35000,"hi":50000,"unit":"yr","loH":17.26,"hiH":24.65},{"role":"turner","title":"CNC Turner Setter / Operator \u2013 nights","town":"Yateley","mi":18.4,"pattern":"nights","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/manufacturing-jobs-in-reading","lo":18.666666666666668,"hi":26.666666666666668,"unit":"hr","loH":18.67,"hiH":26.67},{"role":"turner","title":"CNC Turner Programmer / Setter / Operator","town":"Oxford","mi":24.1,"pattern":"days","level":"skilled","date":"1 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-reading","lo":45000,"hi":50000,"unit":"yr","loH":22.19,"hiH":24.65},{"role":"miller","title":"CNC Miller Programmer Setter Operator (Fanuc)","town":"Camberley","mi":22.1,"pattern":"days","level":"skilled","date":"23 Sep 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-reading","lo":37000,"hi":45000,"unit":"yr","loH":18.24,"hiH":22.19},{"role":"miller","title":"CNC Miller Programmer Setter Operator","town":"Camberley","mi":22.1,"pattern":"days","level":"skilled","date":"28 Sep 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-reading","lo":40000,"hi":45000,"unit":"yr","loH":19.72,"hiH":22.19},{"role":"miller","title":"CNC Miller / Programmer \u2013 3, 4 & 5 Axis","town":"Camberley","mi":22.1,"pattern":"days","level":"skilled","date":"3 Oct 2026","url":"https://www.britishjobs.net/job/225612905/cnc-miller","lo":45000,"hi":60000,"unit":"yr","loH":22.19,"hiH":29.59},{"role":"turner","title":"Sliding Head Machinist (aerospace)","town":"Farnborough","mi":22.5,"pattern":"days","level":"skilled","date":"22 Sep 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-reading"},{"role":"mill-turn","title":"CNC Machinist \u2013 Miller & Turner Setter/Operators","town":"Bracknell","mi":21.3,"pattern":"days","level":"skilled","date":"22 Oct 2026","url":"https://www.engineeringjobs.co.uk/job/225755230/cnc-machinist","lo":38000,"hi":47000,"unit":"yr","loH":18.74,"hiH":23.18},{"role":"miller","title":"CNC Miller","town":"Reading","mi":12.2,"pattern":"days","level":"operator","date":"20 Oct 2026","url":"https://www.cv-library.co.uk/job/225744371/cnc-miller","lo":16,"hi":19,"unit":"hr","loH":16,"hiH":19},{"role":"mill-turn","title":"CNC Programmer (setting & proving)","town":"Reading","mi":12.2,"pattern":"days","level":"skilled","date":"21 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-berkshire","lo":45000,"hi":65000,"unit":"yr","loH":22.19,"hiH":32.05},{"role":"mill-turn","title":"CNC Machinist \u2013 Mill/Turn (Mazak Integrex)","town":"Newbury","mi":3.4,"pattern":"days","level":"skilled","date":"13 Oct 2026","url":"https://www.contractorjobs.co.uk/job/225721184/cnc-machinist","lo":35000,"hi":45000,"unit":"yr","loH":17.26,"hiH":22.19},{"role":"miller","title":"CNC Machinist \u2013 Miller (VMC)","town":"Reading","mi":12.2,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-miller-jobs-in-reading","lo":35000,"hi":40000,"unit":"yr","loH":17.26,"hiH":19.72},{"role":"mill-turn","title":"CNC Turner / Miller \u2013 early shift","town":"Maidenhead","mi":24.0,"pattern":"earlies","level":"skilled","date":"28 Oct 2026","url":"https://www.contractorjobs.co.uk/job/225775735/cnc-turner-miller","lo":19,"hi":21,"unit":"hr","loH":19,"hiH":21},{"role":"miller","title":"CNC Miller Setter Operator (motorsport)","town":"White Waltham","mi":21.2,"pattern":"days","level":"skilled","date":"15 Oct 2026","url":"https://www.cv-library.co.uk/cnc-miller-jobs-in-reading","lo":18,"hi":20,"unit":"hr","loH":18,"hiH":20},{"role":"turner","title":"CNC Turner Setter Operator (motorsport)","town":"White Waltham","mi":21.2,"pattern":"days","level":"skilled","date":"15 Oct 2026","url":"https://www.cv-library.co.uk/job/225728524/cnc-turner","lo":18,"hi":20,"unit":"hr","loH":18,"hiH":20},{"role":"mill-turn","title":"CNC Machinist","town":"High Wycombe","mi":26.4,"pattern":"days","level":"operator","date":"28 Oct 2026","url":"https://www.cv-library.co.uk/cnc-machinist-jobs-in-maidenhead","lo":28000,"hi":33000,"unit":"yr","loH":13.81,"hiH":16.27},{"role":"mill-turn","title":"CNC Machinist","town":"High Wycombe","mi":26.4,"pattern":"days","level":"skilled","date":"18 Sep 2026","url":"https://www.engineeringjobs.co.uk/job/221189371/cnc-machinist","lo":17,"hi":20,"unit":"hr","loH":17,"hiH":20},{"role":"turner","title":"CNC / Workshop Technician (turning)","town":"High Wycombe","mi":26.4,"pattern":"days","level":"operator","date":"28 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-high-wycombe","lo":15,"hi":20,"unit":"hr","loH":15,"hiH":20},{"role":"miller","title":"CNC Miller Setter / Operator \u2013 3, 4 & 5 axis","town":"Maidenhead","mi":24.0,"pattern":"days","level":"skilled","date":"Oct 2026","url":"https://www.glassdoor.co.uk/Job/high-wycombe-england-cnc-machine-operator-jobs-SRCH_IL.0,20_IC2681375_KO21,41.htm","lo":17,"hi":19,"unit":"hr","loH":17,"hiH":19},{"role":"mill-turn","title":"CNC Machinist","town":"Maidenhead","mi":24.0,"pattern":"days","level":"skilled","date":"28 Oct 2026","url":"https://jobs.co.uk/job/cnc-machinist-macgregor-industries-ltd--229c46fb-ff4a-4bd6-ab40-974bfb7df425","lo":36000,"hi":36000,"unit":"yr","loH":17.75,"hiH":17.75},{"role":"miller","title":"CNC Miller Programmer","town":"Aylesbury","mi":34.0,"pattern":"days","level":"skilled","date":"13 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-high-wycombe","lo":38000,"hi":41600,"unit":"yr","loH":18.74,"hiH":20.51},{"role":"turner","title":"CNC Turner, Programmer, Setter","town":"Aylesbury","mi":34.0,"pattern":"days","level":"skilled","date":"16 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-high-wycombe","lo":40000,"hi":50000,"unit":"yr","loH":19.72,"hiH":24.65},{"role":"turner","title":"CNC Turner Programmer Setter Operator (Fanuc)","town":"Farnham","mi":23.3,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":30000,"hi":50000,"unit":"yr","loH":14.79,"hiH":24.65},{"role":"turner","title":"CNC Turner (MOD / Formula 1)","town":"Farnborough","mi":22.5,"pattern":"days","level":"skilled","date":"28 Oct 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":18,"hi":20,"unit":"hr","loH":18,"hiH":20},{"role":"turner","title":"CNC Turner Programmer Setter Operator (Doosan)","town":"Tadley","mi":6.2,"pattern":"days","level":"skilled","date":"30 Oct 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":22,"hi":22,"unit":"hr","loH":22,"hiH":22},{"role":"miller","title":"CNC Miller / CAD-CAM Offline Programmer","town":"Sandhurst","mi":19.6,"pattern":"days","level":"skilled","date":"28 Oct 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":48000,"hi":50000,"unit":"yr","loH":23.67,"hiH":24.65},{"role":"turner","title":"CNC Turner \u2013 weekend shift (Okuma)","town":"Newbury","mi":3.4,"pattern":"weekends","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-turner-jobs-in-basingstoke","lo":45000,"hi":50000,"unit":"yr","loH":22.19,"hiH":24.65},{"role":"miller","title":"CNC Miller / Mill-Turn (programming)","town":"Oxford","mi":24.1,"pattern":"days","level":"skilled","date":"6 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":40000,"hi":47000,"unit":"yr","loH":19.72,"hiH":23.18},{"role":"turner","title":"CNC Turner","town":"Kidlington","mi":29.0,"pattern":"days","level":"skilled","date":"30 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":16,"hi":25,"unit":"hr","loH":16,"hiH":25},{"role":"mill-turn","title":"CNC Operator / Machinist","town":"Didcot","mi":14.0,"pattern":"days","level":"skilled","date":"9 Oct 2026","url":"https://www.cv-library.co.uk/job/225041910/cnc-operator","lo":30000,"hi":45000,"unit":"yr","loH":14.79,"hiH":22.19},{"role":"miller","title":"CNC Miller \u2013 3, 4 & 5 axis","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"21 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-abingdon","lo":35000,"hi":40000,"unit":"yr","loH":17.26,"hiH":19.72},{"role":"miller","title":"CNC Miller (Setter)","town":"Steventon","mi":15.4,"pattern":"days","level":"skilled","date":"27 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-abingdon","lo":35000,"hi":45000,"unit":"yr","loH":17.26,"hiH":22.19},{"role":"miller","title":"CNC Milling Programmer / Setter / Operator","town":"Oxford","mi":24.1,"pattern":"days","level":"skilled","date":"20 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":40000,"hi":50000,"unit":"yr","loH":19.72,"hiH":24.65},{"role":"turner","title":"CNC Machinist / Setter (turning)","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"5 Oct 2026","url":"https://www.cv-library.co.uk/job/225685856/cnc-machinist-cnc-operator-cnc-setter","lo":40000,"hi":45000,"unit":"yr","loH":19.72,"hiH":22.19},{"role":"turner","title":"CNC Turner \u2013 Programmer / Setter / Operator","town":"Kidlington","mi":29.0,"pattern":"days","level":"skilled","date":"13 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":19,"hi":23,"unit":"hr","loH":19,"hiH":23},{"role":"miller","title":"CNC Machinist \u2013 3, 4 & 5 axis milling","town":"Didcot","mi":14.0,"pattern":"days","level":"skilled","date":"7 Oct 2026","url":"https://www.cv-library.co.uk/job/225700480/cnc-machinist","lo":35000,"hi":45000,"unit":"yr","loH":17.26,"hiH":22.19},{"role":"miller","title":"CNC Miller","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-abingdon","lo":40560,"hi":46644,"unit":"yr","loH":20.0,"hiH":23.0},{"role":"mill-turn","title":"CNC Setter / Operator \u2013 4/5-axis mills & lathes","town":"Cowley","mi":22.7,"pattern":"days","level":"skilled","date":"12 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":40000,"hi":45000,"unit":"yr","loH":19.72,"hiH":22.19},{"role":"miller","title":"CNC Miller / Setter \u2013 multi-axis","town":"Didcot","mi":14.0,"pattern":"days","level":"skilled","date":"22 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-newbury","lo":35000,"hi":45000,"unit":"yr","loH":17.26,"hiH":22.19},{"role":"miller","title":"CNC Miller (early finish Friday)","town":"Oxford","mi":24.1,"pattern":"days","level":"skilled","date":"29 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":18,"hi":21,"unit":"hr","loH":18,"hiH":21},{"role":"miller","title":"CNC Miller, Programmer, Setter Operator","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"8 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":20,"hi":23,"unit":"hr","loH":20,"hiH":23},{"role":"miller","title":"CNC Milling Programmer / Operator / Setter","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"27 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-oxford","lo":48000,"hi":52000,"unit":"yr","loH":23.67,"hiH":25.64},{"role":"miller","title":"CNC Miller Programmer","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"27 Oct 2026","url":"https://www.reed.co.uk/jobs/cnc-miller-programmer/57416724","lo":20,"hi":23,"unit":"hr","loH":20,"hiH":23},{"role":"miller","title":"CNC Miller Programmer","town":"Abingdon","mi":18.5,"pattern":"days","level":"skilled","date":"2 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-witney","lo":18,"hi":23,"unit":"hr","loH":18,"hiH":23},{"role":"miller","title":"CNC Miller \u2013 5-Axis Programmer","town":"Oxford","mi":24.1,"pattern":"days","level":"skilled","date":"2 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-witney","lo":60000,"hi":75000,"unit":"yr","loH":29.59,"hiH":36.98},{"role":"turner","title":"CNC Turner \u2013 Programmer / Setter / Operator (multi-axis)","town":"Kidlington","mi":29.0,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-abingdon","lo":42000,"hi":48000,"unit":"yr","loH":20.71,"hiH":23.67},{"role":"miller","title":"CNC Miller","town":"Andover","mi":17.1,"pattern":"days","level":"skilled","date":"17 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-andover","lo":16,"hi":20,"unit":"hr","loH":16,"hiH":20},{"role":"turner","title":"CNC Turner (temp to perm)","town":"Andover","mi":17.1,"pattern":"days","level":"skilled","date":"19 Oct 2026","url":"https://www.reed.co.uk/jobs/cnc-turner/57484301","lo":14,"hi":22,"unit":"hr","loH":14,"hiH":22},{"role":"mill-turn","title":"5 Axis CNC Operator","town":"Hungerford","mi":11.7,"pattern":"days","level":"operator","date":"20 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-andover","lo":14,"hi":14,"unit":"hr","loH":14,"hiH":14},{"role":"turner","title":"CNC Turner (programming, setting)","town":"Andover","mi":17.1,"pattern":"days","level":"skilled","date":"Nov 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-andover"},{"role":"turner","title":"CNC Turner / Programmer Setter Operator","town":"Swindon","mi":25.5,"pattern":"days","level":"skilled","date":"9 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-swindon"},{"role":"mill-turn","title":"CNC Programmer / Machinist","town":"Swindon","mi":25.5,"pattern":"days","level":"skilled","date":"19 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-swindon","lo":45000,"hi":60000,"unit":"yr","loH":22.19,"hiH":29.59},{"role":"turner","title":"CNC Programmer (Turning)","town":"Swindon","mi":25.5,"pattern":"days","level":"skilled","date":"28 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-marlborough"},{"role":"miller","title":"CNC Miller / Setter Operator","town":"Swindon","mi":25.5,"pattern":"days","level":"operator","date":"9 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-swindon","lo":16.5,"hi":18.5,"unit":"hr","loH":16.5,"hiH":18.5},{"role":"mill-turn","title":"CAD/CAM Programmer, Setter and Operator","town":"Swindon","mi":25.5,"pattern":"days","level":"skilled","date":"3 Sep 2026","url":"https://www.britishjobs.co.uk/job/225563779/cad-cam-programmer-setter-and-operator","lo":45000,"hi":55000,"unit":"yr","loH":22.19,"hiH":27.12},{"role":"turner","title":"CNC Turning Programmer Setter Operator","town":"Aldershot","mi":23.4,"pattern":"days","level":"skilled","date":"7 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-farnborough","lo":18,"hi":22,"unit":"hr","loH":18,"hiH":22},{"role":"turner","title":"Turner \u2013 Programmer / Setter / Operator","town":"Aldershot","mi":23.4,"pattern":"earlies","level":"skilled","date":"7 Oct 2026","url":"https://www.reed.co.uk/jobs/turner-programmer-setter-operator/57426189","lo":37000,"hi":45000,"unit":"yr","loH":18.24,"hiH":22.19},{"role":"mill-turn","title":"CNC Turner / Miller \u2013 early shift","town":"Aldershot","mi":23.4,"pattern":"earlies","level":"skilled","date":"17 Sep 2026","url":"https://www.britishjobs.co.uk/job/225618822/cnc-turner-miller","lo":17,"hi":19,"unit":"hr","loH":17,"hiH":19},{"role":"miller","title":"CNC Miller Programmer","town":"Aldershot","mi":23.4,"pattern":"days","level":"skilled","date":"1 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-camberley","lo":36000,"hi":40000,"unit":"yr","loH":17.75,"hiH":19.72},{"role":"turner","title":"CNC Turner","town":"Farnborough","mi":22.5,"pattern":"days","level":"skilled","date":"3 Nov 2026","url":"https://www.reed.co.uk/jobs/cnc-turner/57638024","lo":45000,"hi":53000,"unit":"yr","loH":22.19,"hiH":26.13},{"role":"mill-turn","title":"CNC Programmer / Operator (Mazak)","town":"Farnborough","mi":22.5,"pattern":"days","level":"skilled","date":"8 Oct 2026","url":"https://www.reed.co.uk/jobs/cnc-programmer-operator-mazak/57438611","lo":40000,"hi":50000,"unit":"yr","loH":19.72,"hiH":24.65},{"role":"turner","title":"CNC Turner \u2013 Fanuc online + CAM","town":"Farnham","mi":23.3,"pattern":"days","level":"skilled","date":"1 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-camberley","lo":43000,"hi":50000,"unit":"yr","loH":21.2,"hiH":24.65},{"role":"turner","title":"CNC Turner / Mill-Turn PSO \u2013 shift (\u00a320.12 basic + shift pay)","town":"Woking","mi":30.2,"pattern":"shift","level":"skilled","date":"27 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell","lo":45000,"hi":55000,"unit":"yr","loH":22.19,"hiH":27.12},{"role":"mill-turn","title":"CNC Programmer / Setter / Operator (aerospace)","town":"Woking","mi":30.2,"pattern":"days","level":"skilled","date":"6 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell","lo":32000,"hi":40000,"unit":"yr","loH":15.78,"hiH":19.72},{"role":"mill-turn","title":"CNC Mill/Turn \u2013 5 axis","town":"West Byfleet","mi":32.2,"pattern":"days","level":"skilled","date":"29 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-farnborough","lo":45000,"hi":52000,"unit":"yr","loH":22.19,"hiH":25.64},{"role":"turner","title":"CNC Turner Setter / Programmer (Mazak)","town":"West Byfleet","mi":32.2,"pattern":"days","level":"skilled","date":"12 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell","lo":40000,"hi":46000,"unit":"yr","loH":19.72,"hiH":22.68},{"role":"turner","title":"CNC Turner \u2013 programming, setting, operating","town":"New Haw","mi":32.4,"pattern":"days","level":"skilled","date":"15 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell"},{"role":"mill-turn","title":"CNC Mill / Turn Operator (aerospace)","town":"Byfleet","mi":33.3,"pattern":"days","level":"skilled","date":"20 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell"},{"role":"miller","title":"CNC Miller \u2013 nightshift (aerospace)","town":"Byfleet","mi":33.3,"pattern":"nights","level":"skilled","date":"6 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bracknell"},{"role":"mill-turn","title":"CNC Machinists \u2013 Programmers, Setters & Operators","town":"Woking","mi":30.2,"pattern":"days","level":"skilled","date":"Oct 2026","url":"https://www.glassdoor.co.uk/Job/high-wycombe-england-cnc-machine-operator-jobs-SRCH_IL.0,20_IC2681375_KO21,41.htm","lo":17,"hi":24,"unit":"hr","loH":17,"hiH":24},{"role":"turner","title":"CNC Turner Setter / Operator","town":"Long Crendon","mi":27.6,"pattern":"days","level":"skilled","date":"Oct 2026","url":"https://www.glassdoor.co.uk/Job/high-wycombe-england-cnc-machine-operator-jobs-SRCH_IL.0,20_IC2681375_KO21,41.htm","lo":16,"hi":16,"unit":"hr","loH":16,"hiH":16},{"role":"mill-turn","title":"CNC Operator","town":"Faringdon","mi":22.7,"pattern":"days","level":"operator","date":"21 Sep 2026","url":"https://www.reed.co.uk/jobs/cnc-machinist-jobs-in-oxfordshire","lo":30000,"hi":42000,"unit":"yr","loH":14.79,"hiH":20.71},{"role":"turner","title":"CNC Turner","town":"Basingstoke","mi":11.7,"pattern":"days","level":"skilled","date":"Oct 2026","url":"https://www.jobsite.co.uk/jobs/cnc-turner","lo":15,"hi":20,"unit":"hr","loH":15,"hiH":20},{"role":"mill-turn","title":"Machinist \u2013 Pattern Shop, night shift (F1)","town":"Grove","mi":16.1,"pattern":"nights","level":"skilled","date":"1 Oct 2026","url":"https://www.jobijoba.co.uk/detail/92/16656c40ca4ab6ee3a647c831224ec34","lo":35000,"hi":55000,"unit":"yr","loH":17.26,"hiH":27.12},{"role":"mill-turn","title":"CNC Setter / Programmer Operator","town":"Thatcham","mi":0.9,"pattern":"days","level":"skilled","date":"11 Sep 2026","url":"https://www.engineeringjobs.co.uk/cnc-machinist-jobs-in-thatcham"},{"role":"miller","title":"CNC Miller (Robodrill, saws, manual)","town":"Thatcham","mi":0.9,"pattern":"days","level":"skilled","date":"14 Sep 2026","url":"https://www.engineeringjobs.co.uk/cnc-machinist-jobs-in-thatcham","lo":40000,"hi":42000,"unit":"yr","loH":19.72,"hiH":20.71},{"role":"turner","title":"CNC Turner \u2013 night shift","town":"Bicester","mi":34.5,"pattern":"nights","level":"skilled","date":"29 Oct 2026","url":"https://www.cv-library.co.uk/cnc-jobs-in-bicester","lo":35000,"hi":45000,"unit":"yr","loH":17.26,"hiH":22.19}],
+  shiftPatterns: [
+    {name:"Days", uplift:0, note:"Basic rate, Monday to Friday"},
+    {name:"Early shift", uplift:15, match:["earlies"]},
+    {name:"Late shift", uplift:20},
+    {name:"Double days", uplift:22.5, note:"Alternating earlies and lates"},
+    {name:"Weekends", uplift:25, match:["weekends"]},
+    {name:"Nights", uplift:30, match:["nights"]},
+    {name:"4-day week + Friday OT", uplift:0, ot:true, otx:1.5, note:"Contracted hours Mon-Thu at basic; Friday paid as overtime at 1.5x"}
+  ],
+  exclusions: [
+    "Operator-only and trainee adverts, and any advert topping out below \u00a318/hr, are counted in the live total but left out of the pay figures.",
+    "Contract and umbrella rates, and Syntech Recruitment's own adverts.",
+    "Office-based CNC roles (estimators, applications, sales, service engineers), grinders and gear cutters.",
+    "Adverts posted before September 2026 or more than 35 miles from site.",
+    "The same advert appearing on more than one job board is counted once."
+  ]
+};
+
+/* ===================== Engine (do not edit per client) ===================== */
+const $=id=>document.getElementById(id);
+const H=BENCH.hoursPerWeek*52;
+const gbp=(v,dp=2)=>"\u00a3"+v.toLocaleString("en-GB",{minimumFractionDigits:dp,maximumFractionDigits:dp});
+const gbpK=v=>"\u00a3"+Math.round(v).toLocaleString("en-GB");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P=BENCH.points; P.forEach(p=>{if(p.loH!=null)p.midH=(p.loH+p.hiH)/2;});
+const paid=P.filter(p=>p.loH!=null);
+const FLOOR=18; paid.forEach(p=>{if(p.hiH<FLOOR)p.level="operator";});
+const core=paid.filter(p=>p.level==="skilled"&&(p.pattern==="days"||p.pattern==="earlies"));
+const shiftAds=paid.filter(p=>p.level==="skilled"&&!(p.pattern==="days"||p.pattern==="earlies"));
+function q(a,x){a=[...a].sort((m,n)=>m-n);if(!a.length)return NaN;const i=(a.length-1)*x,f=Math.floor(i),c=Math.min(f+1,a.length-1);return a[f]+(a[c]-a[f])*(i-f);}
+function stats(set){const t=set.map(p=>p.hiH),m=set.map(p=>p.midH);return{n:set.length,tLQ:q(t,.25),tMed:q(t,.5),tUQ:q(t,.75),mLQ:q(m,.25),mMed:q(m,.5),mUQ:q(m,.75),max:Math.max(...t)};}
+const ALL=stats(core); const S={}; BENCH.roles.forEach(r=>S[r.id]=stats(core.filter(p=>p.role===r.id)));
+
+/* sign-in */
+$("ls-client").textContent=`${BENCH.client} \u00b7 ${BENCH.headlineRoles} \u00b7 ${BENCH.radiusMiles}-mile radius`;
+$("ls-foot").textContent=`${P.length} live adverts \u00b7 market data as at ${BENCH.dated}`;
+try{const w=localStorage.getItem("sx_who");if(w)$("who-input").value=w;}catch(e){}
+$("pw-toggle").addEventListener("click",()=>{const i=$("pw-input"),s=i.type==="password";i.type=s?"text":"password";$("pw-toggle").textContent=s?"Hide":"Show";});
+function err(m){const e=$("login-err");e.textContent=m;e.hidden=!m;}
+$("login-form").addEventListener("submit",ev=>{ev.preventDefault();const who=$("who-input").value.trim(),pw=$("pw-input").value.trim();
+  if(!who){err("Add your name to continue.");$("who-input").focus();return;}
+  if(pw.toLowerCase()!==BENCH.accessCode.toLowerCase()){err("That access code isn\u2019t right. Try again.");$("pw-input").value="";$("pw-input").focus();return;}
+  err("");try{localStorage.setItem("sx_who",who);}catch(e){}
+  $("tb-who").textContent=who;$("login-screen").hidden=true;$("report").hidden=false;window.scrollTo(0,0);});
+$("signout").addEventListener("click",()=>{$("report").hidden=true;$("login-screen").hidden=false;$("pw-input").value="";});
+
+/* header */
+$("r-eyebrow").textContent=`Pay benchmark \u00b7 ${BENCH.client}`;
+$("r-title").textContent=`${BENCH.headlineRoles} within ${BENCH.radiusMiles} miles of ${BENCH.client}`;
+$("r-lede").textContent=`What skilled CNC machinists are being offered right now around ${BENCH.site}, taken from ${P.length} live adverts posted ${BENCH.window}.`;
+$("r-meta").innerHTML=`<span>Dated <b>${BENCH.dated}</b></span><span>Radius <b>${BENCH.radiusMiles} mi</b></span><span>Live adverts <b>${P.length}</b></span><span>With skilled day rates <b>${core.length}</b></span><span>Basis <b>${BENCH.hoursPerWeek} hr week</b></span>`;
+
+/* tiles */
+$("tiles-note").textContent=`Skilled setter / programmer adverts on days, all three role groups (${core.length} adverts).`;
+$("tiles").innerHTML=`
+ <div class="tile hl"><span class="k">Experienced hire rate</span><span class="v">${gbp(ALL.tMed)}</span><span class="s">Median of advertised top rates</span></div>
+ <div class="tile"><span class="k">Market range</span><span class="v">${gbp(ALL.mLQ)}\u2013${gbp(ALL.mUQ).slice(1)}</span><span class="s">Lower to upper quartile, range midpoint</span></div>
+ <div class="tile"><span class="k">Live adverts</span><span class="v">${P.length}</span><span class="s">CNC machining roles within ${BENCH.radiusMiles} miles</span></div>
+ <div class="tile dark"><span class="k">Syntech flat fee</span><span class="v">${gbpK(BENCH.flatFee)}</span><span class="s">Per hire, every role, exclusive</span></div>`;
+
+/* stats table */
+const sRow=(n,s)=>`<tr><td>${n}</td><td>${s.n}</td><td>${gbp(s.mLQ)}</td><td>${gbp(s.mMed)}</td><td>${gbp(s.mUQ)}</td><td>${gbp(s.tLQ)}</td><td class="med">${gbp(s.tMed)}</td><td>${gbp(s.tUQ)}</td><td>${gbp(s.max)}</td><td>${gbpK(s.tMed*H)}</td></tr>`;
+$("stats-table").innerHTML=`<thead><tr><th>Role group</th><th>Adverts</th><th>Midpoint LQ</th><th>Midpoint median</th><th>Midpoint UQ</th><th>Up to \u00b7 LQ</th><th>Up to \u00b7 median</th><th>Up to \u00b7 UQ</th><th>Highest</th><th>Median annual (up to)</th></tr></thead><tbody>${BENCH.roles.map(r=>sRow(r.name,S[r.id])).join("")}${sRow("<b>All skilled</b>",ALL)}</tbody>`;
+
+/* charts: lollipop of advertised top rate */
+const allT=paid.filter(p=>p.level==="skilled").map(p=>p.hiH);
+const lo=16, hi=Math.ceil(Math.max(...allT,30)/2)*2;
+const pct=v=>(Math.max(0,(v-lo))/(hi-lo)*100).toFixed(2)+"%";
+const ticks=[];for(let t=lo;t<=hi;t+=2)ticks.push(t);
+function row(p,med){const sh=!(p.pattern==="days"||p.pattern==="earlies");
+ return `<div class="r"><div class="lab">${esc(p.town)} \u00b7 ${p.mi} mi<small>${esc(p.title)}</small></div><div class="track">${ticks.map(t=>`<span class="grid-l" style="left:${pct(t)}"></span>`).join("")}<span class="rng ${sh?"shift":""}" style="left:0;width:${pct(p.hiH)}"></span><span class="mid" style="left:${pct(p.hiH)}"></span><span class="rv" style="${(p.hiH-lo)/(hi-lo)>.85?`right:calc(100% - ${pct(p.hiH)} + 8px)`:`left:calc(${pct(p.hiH)} + 8px)`}">${gbp(p.hiH)}</span><span class="medline" style="left:${pct(med)}"></span></div></div>`;}
+$("charts").innerHTML=`<div class="sec-head"><h2>Every skilled advert, on one scale</h2><p>Bars run to each advert's top rate in \u00a3 per hour. The red line is the median top rate for that role group. Shift-loaded adverts are shown in pink and kept out of the day-rate figures.</p></div>`+
+ BENCH.roles.map(r=>{const s=S[r.id];const days=core.filter(p=>p.role===r.id).sort((a,b)=>b.hiH-a.hiH);const sh=shiftAds.filter(p=>p.role===r.id).sort((a,b)=>b.hiH-a.hiH);
+  return `<div class="chart" style="margin-bottom:14px"><h3>${r.name}</h3><p class="cap">Median top rate ${gbp(s.tMed)}/hr \u00b7 ${s.n} day-rate adverts${sh.length?` \u00b7 ${sh.length} shift`:""}</p><div class="subhead">Days</div><div class="rows">${days.map(p=>row(p,s.tMed)).join("")}</div>${sh.length?`<div class="subhead">Nights, weekends &amp; shift-loaded</div><div class="rows">${sh.map(p=>row(p,s.tMed)).join("")}</div>`:""}<div class="axis"><div></div><div class="ticks">${ticks.map(t=>`<span style="left:${pct(t)}">\u00a3${t}</span>`).join("")}</div></div><div class="legend"><span><i style="background:var(--bar)"></i>Days</span><span><i style="background:var(--bar-shift)"></i>Shift-loaded</span><span><i style="background:var(--red);width:2px;height:12px"></i>Median top rate</span></div></div>`;}).join("");
+
+/* shift calculator */
+const levels=[["lq",`Lower \u00a3${BENCH.baseRates.lq}`],["med",`Median \u00a3${BENCH.baseRates.med}`],["uq",`Upper \u00a3${BENCH.baseRates.uq}`]];let level="med";
+$("c-seg").innerHTML=levels.map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k===level}">${l}</button>`).join("");
+function setBase(){$("c-base").value=BENCH.baseRates[level].toFixed(2);renderPat();}
+$("c-seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;level=b.dataset.k;[...$("c-seg").children].forEach(x=>x.setAttribute("aria-pressed",x===b));setBase();});
+["c-base","c-hrs","c-fri"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="c-base")[...$("c-seg").children].forEach(x=>x.setAttribute("aria-pressed","false"));renderPat();}));
+function mkt(sp){if(!sp.match)return"";const m=paid.filter(p=>p.level==="skilled"&&sp.match.includes(p.pattern));return m.map(p=>`<span class="chip">${esc(p.town)} up to ${gbp(p.hiH)}</span>`).join(" ");}
+function renderPat(){const base=parseFloat($("c-base").value)||0,hrs=parseFloat($("c-hrs").value)||0,fri=parseFloat($("c-fri").value)||0;
+ $("pat-table").innerHTML=`<thead><tr><th>Pattern</th><th>Uplift</th><th>Hourly rate</th><th>Blended hourly</th><th>Hours / wk</th><th>Weekly gross</th><th>Annual gross</th><th class="note">Notes &amp; live adverts</th></tr></thead><tbody>${BENCH.shiftPatterns.map((sp,i)=>{let rate,weekly,eh=hrs;
+  if(sp.ot){rate=base;weekly=base*hrs+base*sp.otx*fri;eh=hrs+fri;}else{rate=base*(1+sp.uplift/100);weekly=rate*hrs;}
+  const u=sp.ot?`${sp.otx}\u00d7 Fri`:`<input aria-label="${esc(sp.name)} uplift %" data-i="${i}" class="upl" type="number" step="0.5" min="0" max="100" value="${sp.uplift}" style="width:72px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 13px var(--mono);text-align:right;padding:0 6px">%`;
+  const m=mkt(sp);return `<tr><td>${esc(sp.name)}</td><td>${u}</td><td class="rate">${gbp(rate)}</td><td>${sp.ot?gbp(weekly/eh):"\u2014"}</td><td>${sp.ot?`${hrs} + ${fri}`:hrs}</td><td>${gbp(weekly)}</td><td>${gbpK(weekly*52)}</td><td class="note">${sp.note?esc(sp.note):""}${m?(sp.note?"<br>":"")+m:""}</td></tr>`;}).join("")}</tbody>`;
+ document.querySelectorAll(".upl").forEach(inp=>inp.addEventListener("change",()=>{BENCH.shiftPatterns[+inp.dataset.i].uplift=parseFloat(inp.value)||0;renderPat();}));}
+setBase();
+
+/* pitch */
+const agencyShare=null;
+$("pitch").innerHTML=`
+ <div><div class="eyebrow" style="color:#EF3741">Syntech Recruitment \u00b7 proposal for ${BENCH.client}</div>
+ <h2>One recruitment partner for every ${BENCH.client} hire</h2>
+ <p class="lede">There are ${P.length} live CNC machining adverts within ${BENCH.radiusMiles} miles of your site, placed by around ${BENCH.advertisers} different recruiters and employers. The same skilled millers and turners are seeing every one of them. Syntech puts ${BENCH.client} in front of that talent first, with one partner, one process and one fixed fee.</p></div>
+ <div class="pitch-grid">
+  <div class="pc"><b>Engineering and manufacturing only</b><span>Specialist engineering recruitment for more than 20 years. CNC, motorsport and precision machining is our core market.</span></div>
+  <div class="pc"><b>VaultHire sourcing</b><span>Our own sourcing platform finds machinists who aren't on the job boards, not just the ones replying to adverts.</span></div>
+  <div class="pc"><b>Every role, one fee</b><span>Machining, inspection, engineering, support and management. Every hire at the same flat rate, whatever the salary.</span></div>
+ </div>
+ <div class="offer">
+  <div class="big">${gbpK(BENCH.flatFee)}<small>FLAT FEE PER HIRE \u00b7 EXCLUSIVE PARTNERSHIP</small></div>
+  <div class="fee">
+   <div class="rowf"><label for="f-sal">Salary of hire<input id="f-sal" type="number" step="500" value="${Math.round(BENCH.baseRates.med*H/100)*100}"></label><label for="f-pct">Your current fee %<input id="f-pct" type="number" step="0.5" value="15"></label><label for="f-n">Hires a year<input id="f-n" type="number" step="1" min="1" value="10"></label></div>
+   <table id="fee-table"></table>
+  </div>
+ </div>
+ <div class="contact"><span>${esc(BENCH.preparedBy)}</span><span>${BENCH.contact.phone}</span><span>${BENCH.contact.email}</span><span>${BENCH.contact.web}</span></div>`;
+function renderFee(){const s=parseFloat($("f-sal").value)||0,pc=parseFloat($("f-pct").value)||0,n=parseFloat($("f-n").value)||0;const pf=s*pc/100;
+ $("fee-table").innerHTML=`<tr><td>Percentage fee per hire (${pc}%)</td><td>${gbpK(pf)}</td></tr><tr><td>Syntech flat fee per hire</td><td>${gbpK(BENCH.flatFee)}</td></tr><tr class="save"><td>Saving across ${n} hire${n===1?"":"s"}</td><td>${gbpK(Math.max(0,(pf-BENCH.flatFee)*n))}</td></tr>`;}
+["f-sal","f-pct","f-n"].forEach(id=>$(id).addEventListener("input",renderFee));renderFee();
+
+/* source table */
+const rn=id=>BENCH.roles.find(r=>r.id===id).name;
+const sorted=[...P].sort((a,b)=>(b.hiH??0)-(a.hiH??0));
+$("src-note").textContent=`All ${P.length} adverts found, highest top rate first. Annual salaries are converted on a ${BENCH.hoursPerWeek}-hour week (${H.toLocaleString("en-GB")} hours a year). Each title links to the source listing.`;
+$("src-table").innerHTML=`<thead><tr><th>Role group</th><th>Job title</th><th>Location</th><th>Miles</th><th>Pattern</th><th>Advertised up to</th><th>\u00a3/hr up to</th><th>Posted</th></tr></thead><tbody>${sorted.map(p=>{
+ const up=p.loH==null?'<span class="tag">Pay not stated</span>':(p.unit==="yr"?gbpK(p.hi)+" p.a.":gbp(p.hi)+"/hr");
+ const op=p.level!=="skilled"?' <span class="tag">operator</span>':"";
+ return `<tr><td>${rn(p.role)}</td><td><a href="${p.url}" target="_blank" rel="noopener">${esc(p.title)}</a>${op}</td><td>${esc(p.town)}</td><td class="n">${p.mi}</td><td>${p.pattern}</td><td>${up}</td><td class="n">${p.hiH!=null?gbp(p.hiH):"\u2014"}</td><td>${esc(p.date)}</td></tr>`;}).join("")}</tbody>`;
+
+/* method */
+$("method").innerHTML=`
+ <p><b>Scope</b>CNC miller, turner, mill-turn and machinist adverts at setter, programmer or operator level, posted ${BENCH.window}, within ${BENCH.radiusMiles} miles straight-line of ${esc(BENCH.site)}.</p>
+ <p><b>Pay figures</b>Built from skilled setter / programmer adverts on days or earlies. Hourly rates are used as advertised; annual salaries are divided by ${H.toLocaleString("en-GB")} hours.</p>
+ <p><b>Experienced hire rate</b>The median of each advert's top rate. Quartiles are also shown on range midpoints so the full market is visible.</p>
+ <p><b>Shift options</b>Each pattern multiplies the chosen basic rate by its uplift. The 4-day option pays Mon-Thu at basic and Friday at ${BENCH.shiftPatterns.find(s=>s.ot).otx}x; blended hourly is total pay over total hours.</p>
+ <p style="grid-column:1/-1"><b>Excluded</b>${BENCH.exclusions.map(esc).join("<br>")}</p>`;
+$("foot").textContent=`Prepared by ${BENCH.preparedBy} \u00b7 ${BENCH.dated} \u00b7 Advertised rates only; individual offers vary with experience, controls and machine mix.`;
+</script>
+
+</body>
+</html>
